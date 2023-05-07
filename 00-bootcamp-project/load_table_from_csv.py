@@ -12,7 +12,7 @@ service_account_info = json.load(open(keyfile))
 credentials = service_account.Credentials.from_service_account_info(service_account_info)
 
 project_id = "deb-01-385616"
-database_name = "my_deb_workshop"
+database_name = "deb_bootcamp"
 
 client = bigquery.Client(
     project=project_id,
