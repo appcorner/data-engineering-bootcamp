@@ -9,60 +9,42 @@ DATA_FOLDER = "data"
 BUSINESS_DOMAIN = "greenery"
 location = "asia-southeast1"
 
-# keyfile = os.environ.get("KEYFILE_PATH")
-keyfile = "deb-01-385616-90d7ec900f74.json"
-service_account_info = json.load(open(keyfile))
-credentials = service_account.Credentials.from_service_account_info(service_account_info)
-
-keyfile2 = "deb-01-385616-b51c59d204f3-stgadm.json"
-service_account_info2 = json.load(open(keyfile2))
-credentials2 = service_account.Credentials.from_service_account_info(service_account_info2)
-
 project_id = "deb-01-385616"
 database_name = "deb_bootcamp_02"
 
 # Load data from Local to GCS
 bucket_name = "deb-bootcamp-100039"
 
+keyfile_gcs = "deb-01-385616-b51c59d204f3-stgadm.json"
+service_account_info_gcs = json.load(open(keyfile_gcs))
+credentials_gcs = service_account.Credentials.from_service_account_info(service_account_info_gcs)
+
 storage_client = storage.Client(
     project=project_id,
-    credentials=credentials2,
+    credentials=credentials_gcs,
 )
 bucket = storage_client.bucket(bucket_name)
 
 # Load data from GCS to BigQuery
+keyfile_gbq = "deb-01-385616-90d7ec900f74.json"
+service_account_info_gbq = json.load(open(keyfile_gbq))
+credentials_gbq = service_account.Credentials.from_service_account_info(service_account_info_gbq)
+
 bigquery_client = bigquery.Client(
     project=project_id,
-    credentials=credentials,
+    credentials=credentials_gbq,
     location=location,
 )
-
-
-table_id = f"{project_id}.{database_name}.{data}"
-job_config = bigquery.LoadJobConfig(
-    skip_leading_rows=1,
-    write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-    source_format=bigquery.SourceFormat.CSV,
-    autodetect=True,
-)
-job = bigquery_client.load_table_from_uri(
-    f"gs://{bucket_name}/{destination_blob_name}",
-    table_id,
-    job_config=job_config,
-    location=location,
-)
-job.result()
-
-table = bigquery_client.get_table(table_id)
-print(f"Loaded {table.num_rows} rows and {len(table.schema)} columns to {table_id}")
 
 def upload_data_to_gcs(data):
     file_path = f"{DATA_FOLDER}/{data}.csv"
-    destination_blob_name = f"{BUSINESS_DOMAIN}/{data}/{data}.csv"
+    destination_blob_name = f"{BUSINESS_DOMAIN}/{data}.csv"
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_filename(file_path)
 
-def load_tables(data, table_name):
+    print(f"Uploaded {file_path} to {destination_blob_name}")
+
+def load_tables(data):
     job_config = bigquery.LoadJobConfig(
         skip_leading_rows=1,
         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
@@ -70,8 +52,8 @@ def load_tables(data, table_name):
         autodetect=True,
     )
 
-    destination_blob_name = f"{BUSINESS_DOMAIN}/{data}/{data}.csv"
-    table_id = f"{project_id}.{database_name}.{table_name}"
+    destination_blob_name = f"{BUSINESS_DOMAIN}/{data}.csv"
+    table_id = f"{project_id}.{database_name}.{data}"
     job = bigquery_client.load_table_from_uri(
         f"gs://{bucket_name}/{destination_blob_name}",
         table_id,
@@ -83,7 +65,7 @@ def load_tables(data, table_name):
     table = bigquery_client.get_table(table_id)
     print(f"Loaded {table.num_rows} rows and {len(table.schema)} columns to {table_id}")
 
-def load_partition_tables(table_name, dt, clustering_fields=None):
+def load_partition_tables(data, dt, clustering_fields=None):
     job_config = bigquery.LoadJobConfig(
         skip_leading_rows=1,
         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
@@ -97,13 +79,17 @@ def load_partition_tables(table_name, dt, clustering_fields=None):
     )
 
     partition = dt.replace("-", "")
-    file_path = f"{DATA_FOLDER}/{table_name}.csv"
-    with open(file_path, "rb") as f:
-        table_id = f"{project_id}.{database_name}.{table_name}${partition}"
-        job = client.load_table_from_file(f, table_id, job_config=job_config)
-        job.result()
+    destination_blob_name = f"{BUSINESS_DOMAIN}/{data}.csv"
+    table_id = f"{project_id}.{database_name}.{data}${partition}"
+    job = bigquery_client.load_table_from_uri(
+        f"gs://{bucket_name}/{destination_blob_name}",
+        table_id,
+        job_config=job_config,
+        location=location,
+    )
+    job.result()
 
-    table = client.get_table(table_id)
+    table = bigquery_client.get_table(table_id)
     print(f"Loaded {table.num_rows} rows and {len(table.schema)} columns to {table_id}")
 
 tables = [
@@ -113,6 +99,7 @@ tables = [
     ("promos"),
 ]
 for table_name in tables:
+    upload_data_to_gcs(table_name)
     load_tables(table_name)
 
 partition_tables = [
@@ -121,4 +108,5 @@ partition_tables = [
     ("users", "2020-10-23", ["first_name", "last_name"]),
 ]
 for table_name, dt, clustering_fields in partition_tables:
+    upload_data_to_gcs(table_name)
     load_partition_tables(table_name, dt, clustering_fields)
