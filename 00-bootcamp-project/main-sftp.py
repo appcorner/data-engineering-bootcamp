@@ -19,11 +19,11 @@ cnopts.hostkeys = None
 files = [
     "promos.csv",
     "products.csv",
-    # "addresses.csv",
-    # "events.csv",
-    # "order_items.csv",
-    # "orders.csv",
-    # "users.csv",
+    "addresses.csv",
+    "events.csv",
+    "order_items.csv",
+    "orders.csv",
+    "users.csv",
 ]
 with pysftp.Connection(host, username=username, password=password, port=port, cnopts=cnopts) as sftp:
     for f in files:
