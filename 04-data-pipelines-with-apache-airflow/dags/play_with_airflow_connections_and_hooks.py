@@ -3,6 +3,7 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils import timezone
 
+import great_expectations as ge
 
 def _get_data():
     pg_hook = PostgresHook(
@@ -29,6 +30,17 @@ def _dump_data(table: str):
     pg_hook.bulk_dump(table, f"/opt/airflow/dags/data/{table}_export")
     
 
+def _validate_data():
+	columns = ["product_id", "name", "price", "inventory"]
+	my_df = ge.read_csv("/opt/airflow/dags/data/products_export", names=columns, sep="\t")
+	results = my_df.expect_column_values_to_be_between(
+    	column="price",
+    	min_value=0.1,
+    	max_value=95.0,
+	)
+	assert results["success"] is True
+
+
 with DAG(
     dag_id="play_with_airflow_connections_and_hooks",
     schedule=None,
@@ -48,3 +60,10 @@ with DAG(
         op_kwargs={"table": "products"},
         # op_args=["products"], # list of arguments
     )
+
+    validate_data = PythonOperator(
+        task_id="validate_data",
+        python_callable=_validate_data,
+    )
+    
+    dump_product_data >> validate_data
