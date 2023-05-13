@@ -36,9 +36,12 @@ bigquery_client = bigquery.Client(
     location=location,
 )
 
-def upload_data_to_gcs(data):
+def upload_data_to_gcs(data, dt=None):
     file_path = f"{DATA_FOLDER}/{data}.csv"
-    destination_blob_name = f"{BUSINESS_DOMAIN}/{data}.csv"
+    if dt:
+        destination_blob_name = f"{BUSINESS_DOMAIN}/{data}/{dt}/{data}.csv"
+    else:
+        destination_blob_name = f"{BUSINESS_DOMAIN}/{data}/{data}.csv"
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_filename(file_path)
 
@@ -52,7 +55,7 @@ def load_tables(data):
         autodetect=True,
     )
 
-    destination_blob_name = f"{BUSINESS_DOMAIN}/{data}.csv"
+    destination_blob_name = f"{BUSINESS_DOMAIN}/{data}/{data}.csv"
     table_id = f"{project_id}.{database_name}.{data}"
     job = bigquery_client.load_table_from_uri(
         f"gs://{bucket_name}/{destination_blob_name}",
@@ -79,7 +82,10 @@ def load_partition_tables(data, dt, clustering_fields=None):
     )
 
     partition = dt.replace("-", "")
-    destination_blob_name = f"{BUSINESS_DOMAIN}/{data}.csv"
+    if dt:
+        destination_blob_name = f"{BUSINESS_DOMAIN}/{data}/{dt}/{data}.csv"
+    else:
+        destination_blob_name = f"{BUSINESS_DOMAIN}/{data}/{data}.csv"
     table_id = f"{project_id}.{database_name}.{data}${partition}"
     job = bigquery_client.load_table_from_uri(
         f"gs://{bucket_name}/{destination_blob_name}",
@@ -108,5 +114,5 @@ partition_tables = [
     ("users", "2020-10-23", ["first_name", "last_name"]),
 ]
 for table_name, dt, clustering_fields in partition_tables:
-    upload_data_to_gcs(table_name)
+    upload_data_to_gcs(table_name, dt)
     load_partition_tables(table_name, dt, clustering_fields)
