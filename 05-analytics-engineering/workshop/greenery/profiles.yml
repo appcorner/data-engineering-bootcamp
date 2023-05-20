@@ -1,0 +1,44 @@
+greenery:
+  outputs:
+    dbt_zkan:
+      type: postgres
+      threads: 1
+      host: localhost
+      port: 5432
+      user: postgres
+      pass: "{{ env_var('DBT_ENV_SECRET_PG_PASSWORD') }}"
+      dbname: greenery
+      schema: dbt_zkan
+
+    prod:
+      type: postgres
+      threads: 1
+      host: localhost
+      port: 5432
+      user: postgres
+      pass: "{{ env_var('DBT_ENV_SECRET_PG_PASSWORD') }}"
+      dbname: greenery
+      schema: prod
+
+    dpt_ap_bigquery:
+      type: bigquery
+      method: service-account
+      project: deb-01-385616
+      # project: ชื่อ project ของ BigQuery
+      dataset: dbt_app
+      # dataset: ชื่อ dataset ใหม่ที่เก็บข้อมูลจาก dbt
+      threads: 1
+      keyfile: /workspaces/data-engineering-bootcamp/00-bootcamp-project/deb-01-385616-90d7ec900f74.json
+      #keyfile: /workspaces/data-engineering-bootcamp/00-bootcamp-project/deb-01-385616-b51c59d204f3-stgadm.json
+      location: asia-southeast1
+
+    prod_bigquery:
+      type: bigquery
+      method: service-account
+      project: greenery
+      dataset: greenery
+      threads: 1
+      keyfile: /Users/zkan/.dbt/your-gcp-credential-file.json
+      location: asia-southeast1
+
+  target: dpt_ap_bigquery
