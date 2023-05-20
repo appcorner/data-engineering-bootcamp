@@ -1,0 +1,24 @@
+version: 2
+
+sources:
+  - name: greenery
+    schema: deb_bootcamp_02
+    database: deb-01-385616
+    # schema: ชื่อ dataset ของ BigQuery
+    # database: ชื่อ project ของ BigQuery
+
+    tables:
+      - name: users
+        description: Greenery users
+      - name: events
+        description: Greenery events
+      - name: products
+        description: Greenery products
+      - name: orders
+        description: Greenery orders
+      - name: "order-items"
+        description: Greenery order items
+      - name: promos
+        description: Greenery promos
+      - name: addresses
+        description: Greenery addresses
