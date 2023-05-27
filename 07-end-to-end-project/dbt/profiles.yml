@@ -1,0 +1,21 @@
+networkrail:
+  target: dbt_app
+
+  outputs:
+    dbt_app:
+      type: bigquery
+      method: service-account
+      project: deb-01-385616
+      dataset: dbt_app
+      threads: 1
+      keyfile: /workspaces/data-engineering-bootcamp/07-end-to-end-project/dags/deb-01-385616-90d7ec900f74.json
+      location: asia-southeast1
+
+    prod:
+      type: bigquery
+      method: service-account
+      project: deb-01-385616
+      dataset: networkrail
+      threads: 1
+      keyfile: /workspaces/data-engineering-bootcamp/07-end-to-end-project/dags/deb-01-385616-90d7ec900f74.json
+      location: asia-southeast1
